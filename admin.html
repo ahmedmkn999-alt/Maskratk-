@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة تحكم القائد | إدارة الأكواد</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { background: #0f0f0f; color: #fff; font-family: 'Cairo', sans-serif; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        
+        .card { background: #1a1a1a; padding: 20px; border-radius: 15px; border: 1px solid #333; margin-bottom: 20px; }
+        h2 { color: #FFD700; margin-bottom: 20px; }
+        
+        input { width: 100%; padding: 10px; margin-bottom: 10px; background: #222; border: 1px solid #444; color: #fff; border-radius: 5px; }
+        button { width: 100%; padding: 10px; background: #FFD700; border: none; font-weight: bold; cursor: pointer; border-radius: 5px; }
+        button:hover { opacity: 0.9; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 10px; text-align: right; border-bottom: 1px solid #333; }
+        th { color: #888; }
+        .delete-btn { background: #ff4444; color: #fff; padding: 5px 10px; width: auto; font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="card">
+        <h2>إنشاء كود جديد</h2>
+        <input type="text" id="studentName" placeholder="اسم الطالب (مثال: محمد أحمد)">
+        <input type="text" id="codeValue" placeholder="الكود (مثال: M-5050)">
+        <button onclick="addCode()">إضافة الكود للقاعدة</button>
+        <p id="status" style="margin-top:10px; color:#0f0; display:none;">تمت الإضافة بنجاح!</p>
+    </div>
+
+    <div class="card">
+        <h2>الأكواد المفعلة حالياً</h2>
+        <table id="codesTable">
+            <thead>
+                <tr>
+                    <th>اسم الطالب</th>
+                    <th>الكود</th>
+                    <th>حذف</th>
+                </tr>
+            </thead>
+            <tbody>
+                </tbody>
+        </table>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyAVWCxTVgg3i25jJ0LbZOxpB4mfQc_BnQs",
+        authDomain: "maskratk.firebaseapp.com",
+        projectId: "maskratk",
+        storageBucket: "maskratk.firebasestorage.app",
+        messagingSenderId: "857906406354",
+        appId: "1:857906406354:web:c19538fd2824b9a64d5e0b",
+        measurementId: "G-E3018VB921"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // إضافة كود جديد
+    window.addCode = async function() {
+        const name = document.getElementById('studentName').value;
+        const code = document.getElementById('codeValue').value;
+
+        if(name && code) {
+            try {
+                await addDoc(collection(db, "access_codes"), {
+                    name: name,
+                    code: code,
+                    createdAt: new Date()
+                });
+                document.getElementById('studentName').value = '';
+                document.getElementById('codeValue').value = '';
+                document.getElementById('status').style.display = 'block';
+                setTimeout(() => document.getElementById('status').style.display = 'none', 2000);
+            } catch (e) {
+                alert("خطأ: " + e.message);
+            }
+        } else {
+            alert("اكتب البيانات الأول!");
+        }
+    }
+
+    // عرض الأكواد لحظياً
+    const unsub = onSnapshot(collection(db, "access_codes"), (docSnapshot) => {
+        const table = document.getElementById('codesTable').querySelector('tbody');
+        table.innerHTML = '';
+        docSnapshot.forEach((doc) => {
+            const data = doc.data();
+            const row = `
+                <tr>
+                    <td>${data.name}</td>
+                    <td style="color:#FFD700; font-family:monospace;">${data.code}</td>
+                    <td><button class="delete-btn" onclick="deleteCode('${doc.id}')">حذف</button></td>
+                </tr>
+            `;
+            table.innerHTML += row;
+        });
+    });
+
+    // حذف كود
+    window.deleteCode = async function(id) {
+        if(confirm("متاكد عايز تحذف الكود ده؟ الطالب مش هيعرف يدخل تاني.")) {
+            await deleteDoc(doc(db, "access_codes", id));
+        }
+    }
+</script>
+</body>
+</html>
