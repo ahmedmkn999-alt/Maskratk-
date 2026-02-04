@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>منصة معسكراتك | Camp 4-1</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    
+    <style>
+        /* نفس التصميم الفخم السابق */
+        :root { --primary: #FFD700; --bg-dark: #050505; --bg-panel: #121212; --text-main: #ffffff; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Cairo', sans-serif; }
+        body { background-color: var(--bg-dark); color: var(--text-main); overflow-x: hidden; }
+
+        /* شاشة الدخول */
+        #login-gate {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at center, #1a1a1a 0%, #000 100%);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            z-index: 9999;
+        }
+        .gate-container {
+            text-align: center; background: rgba(255, 255, 255, 0.03); padding: 3rem;
+            border-radius: 20px; border: 1px solid rgba(255, 215, 0, 0.1); width: 90%; max-width: 400px;
+        }
+        .gate-input { width: 100%; padding: 15px; margin: 20px 0; background: #000; border: 2px solid #333; border-radius: 50px; color: var(--primary); text-align: center; font-size: 1.2rem; }
+        .gate-btn { background: var(--primary); color: #000; border: none; padding: 12px 50px; border-radius: 50px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .gate-btn:hover { transform: scale(1.05); }
+        .gate-loader { display: none; color: var(--primary); margin-top: 10px; }
+        
+        /* باقي تصميم المنصة */
+        #platform-ui { display: none; padding-bottom: 50px; }
+        header { padding: 20px 5%; background: linear-gradient(180deg, rgba(20,20,20,0.95) 0%, rgba(20,20,20,0) 100%); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .brand { font-size: 1.5rem; font-weight: 800; color: #fff; }
+        .brand span { color: var(--primary); }
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; display: grid; grid-template-columns: 1fr 350px; gap: 30px; }
+        .video-wrapper { background: #000; border-radius: 15px; overflow: hidden; position: relative; padding-top: 56.25%; border: 1px solid #333; }
+        video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+        .video-info { margin-top: 20px; padding: 20px; background: var(--bg-panel); border-radius: 15px; border: 1px solid #222; }
+        .playlist-section { background: var(--bg-panel); border-radius: 15px; border: 1px solid #222; overflow: hidden; max-height: 85vh; display: flex; flex-direction: column; }
+        .playlist-items { overflow-y: auto; flex: 1; }
+        .module-title { padding: 15px 20px; background: #0f0f0f; color: #aaa; border-bottom: 1px solid #222; }
+        .video-item { padding: 15px 20px; border-bottom: 1px solid #222; cursor: pointer; display: flex; align-items: center; }
+        .video-item:hover { background: #222; }
+        .video-item.active { background: rgba(255, 215, 0, 0.1); border-right: 3px solid var(--primary); }
+        .v-icon { margin-left: 15px; font-size: 0.8rem; }
+        @media (max-width: 900px) { .container { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+    <div id="login-gate">
+        <div class="gate-container">
+            <h1 style="color: var(--primary); margin-bottom: 10px;">معسكراتك</h1>
+            <p style="color: #888;">أدخل كود التفعيل الخاص بك</p>
+            <input type="password" id="gate-key" class="gate-input" placeholder="Code">
+            <button class="gate-btn" onclick="checkDatabase()">دخول</button>
+            <div id="loader" class="gate-loader">جاري التحقق...</div>
+            <p class="error-msg" id="gate-error" style="color: #ff4d4d; margin-top: 15px; display: none;">الكود غير صحيح أو منتهي الصلاحية</p>
+        </div>
+    </div>
+
+    <div id="platform-ui">
+        <header>
+            <div class="brand">MASK<span>ARATAK</span></div>
+            <div style="font-size: 0.9rem; color: #888;" id="welcome-msg">أهلاً بك</div>
+        </header>
+        <div class="container">
+            <div>
+                <div class="video-wrapper">
+                    <video id="main-player" controls playsinline></video>
+                </div>
+                <div class="video-info">
+                    <h2 style="color: var(--primary);" id="current-title">اختر درساً للبدء</h2>
+                </div>
+            </div>
+            <div class="playlist-section">
+                <div style="padding: 20px; border-bottom: 1px solid #333; font-weight: bold;">المحتوى</div>
+                <div class="playlist-items" id="playlist-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAVWCxTVgg3i25jJ0LbZOxpB4mfQc_BnQs",
+            authDomain: "maskratk.firebaseapp.com",
+            projectId: "maskratk",
+            storageBucket: "maskratk.firebasestorage.app",
+            messagingSenderId: "857906406354",
+            appId: "1:857906406354:web:c19538fd2824b9a64d5e0b",
+            measurementId: "G-E3018VB921"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // وظيفة التحقق من الكود في قاعدة البيانات
+        window.checkDatabase = async function() {
+            const inputCode = document.getElementById('gate-key').value;
+            const loader = document.getElementById('loader');
+            const errorMsg = document.getElementById('gate-error');
+            
+            if(!inputCode) return;
+
+            loader.style.display = 'block';
+            errorMsg.style.display = 'none';
+
+            try {
+                // البحث في كوليكشن "access_codes" عن الكود المطابق
+                const q = query(collection(db, "access_codes"), where("code", "==", inputCode));
+                const querySnapshot = await getDocs(q);
+
+                if (!querySnapshot.empty) {
+                    // الكود صحيح وموجود
+                    const userData = querySnapshot.docs[0].data();
+                    document.getElementById('welcome-msg').innerText = `أهلاً بك يا بطل: ${userData.name}`;
+                    
+                    document.getElementById('login-gate').style.opacity = 0;
+                    setTimeout(() => {
+                        document.getElementById('login-gate').style.display = 'none';
+                        document.getElementById('platform-ui').style.display = 'block';
+                        loadPlaylist();
+                    }, 800);
+                } else {
+                    // الكود غلط
+                    loader.style.display = 'none';
+                    errorMsg.style.display = 'block';
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                alert("تأكد من إعدادات فايربيس (Firestore) في الكونسول!");
+                loader.style.display = 'none';
+            }
+        }
+
+        // نفس داتا المعسكر القديمة (مختصرة للعرض، الكود الكامل فيه الداتا كاملة)
+        const campData = [
+            {
+                module: "المهمة الأولى",
+                videos: [
+                    { name: "مقدمة المهمة الأولي", url: "https://river-4-404.rtbcdn.ru/hls-vod/EHn5i5DByob8O9pOLkRvmg/1770645966/3310/0x5000c500e9b6282b/f6c8e8d620f3450495303e888fe1ede1.mp4.m3u8" },
+                    // ... (باقي الفيديوهات زي ما كانت)
+                    { name: "شرح الـنحو", url: "https://river-4-429.rtbcdn.ru/hls-vod/pY6nkzrcG4lHcv1P_FKB1w/1770639813/3322/0x5000c500e9ebd5af/7ed17944068f431bbc6a44ed612999bd.mp4.m3u8" }
+                ]
+            }
+            // ضيف باقي المهام هنا زي الكود اللي فات بالظبط
+        ];
+
+        // باقي وظائف التشغيل (loadPlaylist, playVideo) زي الكود اللي فات بالظبط
+        // هنسخلك دوال التشغيل عشان الكود يشتغل علطول
+        
+        window.loadPlaylist = function() {
+            const container = document.getElementById('playlist-container');
+            // هنا أنا حطيت عينة داتا، لازم تحط الـ campData الكاملة من الكود اللي فات
+            campData.forEach(module => {
+                const header = document.createElement('div');
+                header.className = 'module-title';
+                header.innerText = module.module;
+                container.appendChild(header);
+                module.videos.forEach(video => {
+                    const item = document.createElement('div');
+                    item.className = 'video-item';
+                    item.innerHTML = `<span class="v-icon">▶</span> <span>${video.name}</span>`;
+                    item.onclick = () => playVideo(video.url, video.name, item);
+                    container.appendChild(item);
+                });
+            });
+        }
+
+        window.playVideo = function(url, title, element) {
+            const video = document.getElementById('main-player');
+            document.getElementById('current-title').innerText = title;
+            document.querySelectorAll('.video-item').forEach(el => el.classList.remove('active'));
+            element.classList.add('active');
+            if (Hls.isSupported()) {
+                const hls = new Hls();
+                hls.loadSource(url);
+                hls.attachMedia(video);
+                hls.on(Hls.Events.MANIFEST_PARSED, function() { video.play(); });
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                video.src = url;
+                video.addEventListener('loadedmetadata', function() { video.play(); });
+            }
+        }
+    </script>
+</body>
+</html>
