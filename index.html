@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>منصة معسكراتك | الأكاديمية الشاملة</title>
+    <title>منصة معسكراتك | الأكاديمية</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <style>
@@ -16,6 +16,7 @@
         .gate-box { background: #111; padding: 40px; border-radius: 20px; border: 1px solid #333; text-align: center; width: 90%; max-width: 400px; }
         .gate-input { width: 100%; padding: 15px; margin: 20px 0; background: #000; border: 1px solid #333; color: var(--primary); text-align: center; font-size: 1.2rem; border-radius: 10px; }
         .gate-btn { background: var(--primary); color: #000; padding: 10px 40px; border: none; border-radius: 50px; font-weight: bold; cursor: pointer; }
+        .gate-btn:hover { opacity: 0.9; transform: scale(1.05); transition: 0.2s; }
 
         /* الهيدر */
         header { padding: 20px 5%; background: #111; border-bottom: 1px solid #333; display: flex; flex-direction: column; gap: 15px; }
@@ -23,7 +24,7 @@
         .brand { font-weight: 800; font-size: 1.5rem; color: #fff; }
         .brand span { color: var(--primary); }
         
-        /* شريط التنقل */
+        /* Breadcrumbs */
         .breadcrumbs { display: flex; gap: 10px; font-size: 0.9rem; color: #888; align-items: center; overflow-x: auto; white-space: nowrap; }
         .breadcrumb-item { cursor: pointer; transition: 0.2s; }
         .breadcrumb-item:hover { color: #fff; }
@@ -34,7 +35,7 @@
         #platform { display: none; min-height: 100vh; }
         .container { padding: 30px 5%; max-width: 1400px; margin: 0 auto; }
 
-        /* Grid Cards */
+        /* Grid System */
         .grid-view { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; animation: fadeIn 0.5s; }
         .card { background: var(--panel); border: 1px solid #333; border-radius: 15px; overflow: hidden; cursor: pointer; transition: 0.3s; text-align: center; padding-bottom: 15px; }
         .card:hover { transform: translateY(-5px); border-color: var(--primary); }
@@ -42,7 +43,7 @@
         .card-title { font-weight: 700; margin-top: 15px; font-size: 1.1rem; padding: 0 10px; }
         .card-subtitle { font-size: 0.85rem; color: #888; margin-top: 5px; }
 
-        /* واجهة الفيديو */
+        /* Video Interface */
         .video-layout { display: none; grid-template-columns: 1fr 350px; gap: 20px; height: calc(100vh - 150px); animation: fadeIn 0.5s; }
         .video-container { background: #000; border-radius: 15px; overflow: hidden; display: flex; flex-direction: column; border: 1px solid #333; }
         .player-wrapper { flex: 1; background: #000; position: relative; }
@@ -71,7 +72,7 @@
         <div class="gate-box">
             <h1 style="color: #fff; margin-bottom: 10px;">أكاديمية معسكراتك</h1>
             <input type="password" id="access-code" class="gate-input" placeholder="الكود السري">
-            <button class="gate-btn" onclick="checkCode()">دخول</button>
+            <button id="enter-btn" class="gate-btn">دخول</button>
             <p id="error-msg" style="color: red; margin-top: 10px; display: none;">الكود غير صحيح</p>
         </div>
     </div>
@@ -116,8 +117,14 @@
             measurementId: "G-E3018VB921"
         };
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+        // تهيئة Firebase بشكل آمن (لو فشل يكمل عادي بالكود الماستر)
+        let db;
+        try {
+            const app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+        } catch (e) {
+            console.warn("Firebase not loaded correctly, Master Key only mode.");
+        }
 
         // --- البيانات الكاملة ---
         const rawData = [
@@ -221,41 +228,49 @@
 
         let navigationState = { currentSubject: null, currentTeacher: null, currentChapter: null };
 
-        // --- دوال التشغيل ---
+        // ** الوظيفة الأساسية للدخول (مربوطة بـ window عشان يشوفها الـ HTML) **
         window.checkCode = async function() {
             const code = document.getElementById('access-code').value;
-            // MASTER KEY: 2026 
-            // هيدخلك فوراً حتى لو قاعدة البيانات فيها مشكلة
+            const errorMsg = document.getElementById('error-msg');
+            
+            // 1. فحص الكود الماستر (يعمل بدون نت/قاعدة بيانات)
             if (code === "2026") {
-                document.getElementById('user-name').innerText = "المدير (Master)";
-                document.getElementById('login-gate').style.display = 'none';
-                document.getElementById('platform').style.display = 'block';
-                renderSubjects();
+                document.getElementById('user-name').innerText = "Admin User";
+                unlockPlatform();
                 return;
             }
 
-            // لو الكود مش 2026، هيروح يدور في فايربيس
-            const q = query(collection(db, "access_codes"), where("code", "==", code));
+            // 2. فحص قاعدة البيانات (لو الماستر مش هو اللي اتكتب)
             try {
+                if(!db) throw new Error("Database not initialized");
+                
+                const q = query(collection(db, "access_codes"), where("code", "==", code));
                 const snapshot = await getDocs(q);
+                
                 if (!snapshot.empty) {
                     const data = snapshot.docs[0].data();
                     document.getElementById('user-name').innerText = data.name;
-                    document.getElementById('login-gate').style.display = 'none';
-                    document.getElementById('platform').style.display = 'block';
-                    renderSubjects();
+                    unlockPlatform();
                 } else {
-                    document.getElementById('error-msg').innerText = "الكود غير صحيح";
-                    document.getElementById('error-msg').style.display = 'block';
+                    errorMsg.innerText = "الكود غير صحيح";
+                    errorMsg.style.display = 'block';
                 }
-            } catch(e) { 
-                console.log(e); 
-                // لو حصل خطأ في الاتصال، اعرض رسالة بس ما تمنعش الدخول لو الكود صح
-                alert("في مشكلة في اتصال قاعدة البيانات، بس هحاول ادخلك...");
+            } catch(e) {
+                console.error("Login Error:", e);
+                // لو حصل خطأ في الاتصال، بس الكود مش 2026، هنظهر رسالة خطأ
+                errorMsg.innerText = "خطأ في الاتصال، حاول مرة أخرى أو استخدم كود الطوارئ";
+                errorMsg.style.display = 'block';
             }
         }
 
-        function renderSubjects() {
+        function unlockPlatform() {
+            document.getElementById('login-gate').style.display = 'none';
+            document.getElementById('platform').style.display = 'block';
+            renderSubjects();
+        }
+
+        // --- باقي دوال العرض (Subjects, Teachers, Chapters, Videos) ---
+        window.renderSubjects = function() {
             const grid = document.getElementById('grid-container');
             const vidLayout = document.getElementById('video-layout');
             grid.innerHTML = '';
@@ -264,7 +279,6 @@
             updateBreadcrumbs(0);
 
             const subjects = rawData[0].subjects;
-
             subjects.forEach(sub => {
                 const card = createCard(sub.subject_name, 'مادة دراسية', sub.image_url);
                 card.onclick = () => renderTeachers(sub);
@@ -272,7 +286,7 @@
             });
         }
 
-        function renderTeachers(subject) {
+        window.renderTeachers = function(subject) {
             navigationState.currentSubject = subject;
             const grid = document.getElementById('grid-container');
             grid.innerHTML = '';
@@ -285,7 +299,7 @@
             });
         }
 
-        function renderChapters(teacher) {
+        window.renderChapters = function(teacher) {
             navigationState.currentTeacher = teacher;
             const grid = document.getElementById('grid-container');
             grid.innerHTML = '';
@@ -298,7 +312,7 @@
             });
         }
 
-        function renderVideosView(chapter) {
+        window.renderVideosView = function(chapter) {
             navigationState.currentChapter = chapter;
             const grid = document.getElementById('grid-container');
             const vidLayout = document.getElementById('video-layout');
@@ -327,4 +341,75 @@
                 lecture.videos.forEach(vid => {
                     const vidItem = document.createElement('div');
                     vidItem.className = 'video-item';
-                    vidItem.innerHTML = `<span>▶ ${vid.video_
+                    vidItem.innerHTML = `<span>▶ ${vid.video_name}</span>`;
+                    const url = vid.links && vid.links.length > 0 ? vid.links[0].url : '';
+                    
+                    vidItem.onclick = () => {
+                        playVideo(url, vid.video_name);
+                        document.querySelectorAll('.video-item').forEach(i => i.classList.remove('active'));
+                        vidItem.classList.add('active');
+                    };
+                    list.appendChild(vidItem);
+                });
+
+                group.appendChild(title);
+                group.appendChild(list);
+                playlist.appendChild(group);
+            });
+        }
+
+        function createCard(title, subtitle, img) {
+            const div = document.createElement('div');
+            div.className = 'card';
+            div.innerHTML = `
+                <img src="${img}" class="card-img" onerror="this.src='https://via.placeholder.com/300?text=Coursatk'">
+                <div class="card-title">${title}</div>
+                <div class="card-subtitle">${subtitle}</div>
+            `;
+            return div;
+        }
+
+        function updateBreadcrumbs(level) {
+            const container = document.getElementById('breadcrumbs');
+            let html = `<span class="breadcrumb-item" onclick="renderSubjects()">الرئيسية</span>`;
+            
+            if (level >= 1) {
+                html += ` <span class="separator">></span> <span class="breadcrumb-item" onclick="renderTeachers(navigationState.currentSubject)">${navigationState.currentSubject.subject_name}</span>`;
+            }
+            if (level >= 2) {
+                html += ` <span class="separator">></span> <span class="breadcrumb-item" onclick="renderChapters(navigationState.currentTeacher)">${navigationState.currentTeacher.name}</span>`;
+            }
+            if (level >= 3) {
+                html += ` <span class="separator">></span> <span class="breadcrumb-item active">${navigationState.currentChapter.chapter_name}</span>`;
+            }
+            container.innerHTML = html;
+        }
+
+        window.playVideo = function(url, title) {
+            const video = document.getElementById('main-player');
+            const errorOverlay = document.getElementById('error-overlay');
+            document.getElementById('current-video-title').innerText = title;
+            errorOverlay.style.display = 'none';
+
+            if (Hls.isSupported()) {
+                const hls = new Hls();
+                hls.loadSource(url);
+                hls.attachMedia(video);
+                hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
+                hls.on(Hls.Events.ERROR, (e, data) => { if(data.fatal) errorOverlay.style.display = 'flex'; });
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                video.src = url;
+                video.addEventListener('loadedmetadata', () => video.play());
+                video.addEventListener('error', () => errorOverlay.style.display = 'flex');
+            }
+        }
+
+        // ربط زر الدخول يدوياً للتأكد
+        document.getElementById('enter-btn').addEventListener('click', window.checkCode);
+        document.getElementById('access-code').addEventListener('keypress', (e) => {
+            if(e.key === 'Enter') window.checkCode();
+        });
+
+    </script>
+</body>
+</html>
