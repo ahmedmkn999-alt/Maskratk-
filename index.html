@@ -3,82 +3,84 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>منصة معسكراتك | Camp 4-1</title>
+    <title>منصة معسكراتك | المعسكر 4-1</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-    
     <style>
-        /* نفس التصميم الفخم السابق */
-        :root { --primary: #FFD700; --bg-dark: #050505; --bg-panel: #121212; --text-main: #ffffff; }
+        :root { --primary: #FFD700; --bg: #050505; --panel: #151515; --text: #fff; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Cairo', sans-serif; }
-        body { background-color: var(--bg-dark); color: var(--text-main); overflow-x: hidden; }
+        body { background: var(--bg); color: var(--text); overflow-x: hidden; }
 
         /* شاشة الدخول */
-        #login-gate {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(circle at center, #1a1a1a 0%, #000 100%);
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            z-index: 9999;
-        }
-        .gate-container {
-            text-align: center; background: rgba(255, 255, 255, 0.03); padding: 3rem;
-            border-radius: 20px; border: 1px solid rgba(255, 215, 0, 0.1); width: 90%; max-width: 400px;
-        }
-        .gate-input { width: 100%; padding: 15px; margin: 20px 0; background: #000; border: 2px solid #333; border-radius: 50px; color: var(--primary); text-align: center; font-size: 1.2rem; }
-        .gate-btn { background: var(--primary); color: #000; border: none; padding: 12px 50px; border-radius: 50px; font-weight: bold; cursor: pointer; transition: 0.3s; }
-        .gate-btn:hover { transform: scale(1.05); }
-        .gate-loader { display: none; color: var(--primary); margin-top: 10px; }
-        
-        /* باقي تصميم المنصة */
-        #platform-ui { display: none; padding-bottom: 50px; }
-        header { padding: 20px 5%; background: linear-gradient(180deg, rgba(20,20,20,0.95) 0%, rgba(20,20,20,0) 100%); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .brand { font-size: 1.5rem; font-weight: 800; color: #fff; }
+        #login-gate { position: fixed; inset: 0; background: #000; z-index: 999; display: flex; align-items: center; justify-content: center; flex-direction: column; }
+        .gate-box { background: #111; padding: 40px; border-radius: 20px; border: 1px solid #333; text-align: center; width: 90%; max-width: 400px; }
+        .gate-input { width: 100%; padding: 15px; margin: 20px 0; background: #000; border: 1px solid #333; color: var(--primary); text-align: center; font-size: 1.2rem; border-radius: 10px; }
+        .gate-btn { background: var(--primary); color: #000; padding: 10px 40px; border: none; border-radius: 50px; font-weight: bold; cursor: pointer; }
+
+        /* المنصة */
+        #platform { display: none; }
+        header { padding: 20px; border-bottom: 1px solid #222; background: #111; display: flex; justify-content: space-between; align-items: center; }
+        .brand { font-weight: 800; font-size: 1.4rem; color: #fff; }
         .brand span { color: var(--primary); }
-        .container { max-width: 1400px; margin: 0 auto; padding: 20px; display: grid; grid-template-columns: 1fr 350px; gap: 30px; }
-        .video-wrapper { background: #000; border-radius: 15px; overflow: hidden; position: relative; padding-top: 56.25%; border: 1px solid #333; }
-        video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
-        .video-info { margin-top: 20px; padding: 20px; background: var(--bg-panel); border-radius: 15px; border: 1px solid #222; }
-        .playlist-section { background: var(--bg-panel); border-radius: 15px; border: 1px solid #222; overflow: hidden; max-height: 85vh; display: flex; flex-direction: column; }
-        .playlist-items { overflow-y: auto; flex: 1; }
-        .module-title { padding: 15px 20px; background: #0f0f0f; color: #aaa; border-bottom: 1px solid #222; }
-        .video-item { padding: 15px 20px; border-bottom: 1px solid #222; cursor: pointer; display: flex; align-items: center; }
+
+        .layout { display: grid; grid-template-columns: 1fr 350px; gap: 20px; padding: 20px; height: calc(100vh - 80px); }
+        
+        /* المشغل */
+        .video-container { background: #000; border-radius: 15px; overflow: hidden; position: relative; display: flex; flex-direction: column; }
+        .player-wrapper { flex: 1; position: relative; background: #000; }
+        video { width: 100%; height: 100%; object-fit: contain; }
+        
+        .video-error { position: absolute; inset: 0; background: rgba(0,0,0,0.9); display: none; align-items: center; justify-content: center; flex-direction: column; color: #ff4444; z-index: 10; }
+        
+        .video-details { padding: 20px; background: #111; border-top: 1px solid #333; }
+        .video-title { color: var(--primary); font-size: 1.2rem; margin-bottom: 5px; }
+
+        /* القائمة */
+        .playlist { background: #111; border-radius: 15px; border: 1px solid #222; overflow-y: auto; }
+        .task-header { padding: 15px; background: #1a1a1a; color: #aaa; font-weight: bold; font-size: 0.9rem; position: sticky; top: 0; border-bottom: 1px solid #333; }
+        .video-item { padding: 15px; border-bottom: 1px solid #222; cursor: pointer; display: flex; align-items: center; transition: 0.2s; }
         .video-item:hover { background: #222; }
-        .video-item.active { background: rgba(255, 215, 0, 0.1); border-right: 3px solid var(--primary); }
-        .v-icon { margin-left: 15px; font-size: 0.8rem; }
-        @media (max-width: 900px) { .container { grid-template-columns: 1fr; } }
+        .video-item.active { background: rgba(255, 215, 0, 0.1); border-right: 4px solid var(--primary); }
+        .v-icon { margin-left: 10px; font-size: 0.8rem; color: #555; }
+
+        @media (max-width: 900px) { .layout { grid-template-columns: 1fr; height: auto; } .playlist { max-height: 500px; } }
     </style>
 </head>
 <body>
 
     <div id="login-gate">
-        <div class="gate-container">
-            <h1 style="color: var(--primary); margin-bottom: 10px;">معسكراتك</h1>
-            <p style="color: #888;">أدخل كود التفعيل الخاص بك</p>
-            <input type="password" id="gate-key" class="gate-input" placeholder="Code">
-            <button class="gate-btn" onclick="checkDatabase()">دخول</button>
-            <div id="loader" class="gate-loader">جاري التحقق...</div>
-            <p class="error-msg" id="gate-error" style="color: #ff4d4d; margin-top: 15px; display: none;">الكود غير صحيح أو منتهي الصلاحية</p>
+        <div class="gate-box">
+            <h1 style="color: #fff; margin-bottom: 10px;">معسكراتك</h1>
+            <p style="color: #666;">سجل دخولك يا بطل</p>
+            <input type="password" id="access-code" class="gate-input" placeholder="الكود السري">
+            <button class="gate-btn" onclick="checkCode()">دخول</button>
+            <p id="error-msg" style="color: red; margin-top: 10px; display: none;">الكود غلط!</p>
         </div>
     </div>
 
-    <div id="platform-ui">
+    <div id="platform">
         <header>
             <div class="brand">MASK<span>ARATAK</span></div>
-            <div style="font-size: 0.9rem; color: #888;" id="welcome-msg">أهلاً بك</div>
+            <div id="user-name" style="color: #888;">طالب مجتهد</div>
         </header>
-        <div class="container">
-            <div>
-                <div class="video-wrapper">
+
+        <div class="layout">
+            <div class="video-container">
+                <div class="player-wrapper">
+                    <div id="error-overlay" class="video-error">
+                        <h3>⚠️ عذراً، الفيديو لا يعمل</h3>
+                        <p>صلاحية الرابط انتهت، يرجى تحديث الروابط</p>
+                    </div>
                     <video id="main-player" controls playsinline></video>
                 </div>
-                <div class="video-info">
-                    <h2 style="color: var(--primary);" id="current-title">اختر درساً للبدء</h2>
+                <div class="video-details">
+                    <h3 id="current-title" class="video-title">اختر محاضرة للبدء</h3>
+                    <p style="color: #666;">المعسكر 4-1 | اللغة العربية</p>
                 </div>
             </div>
-            <div class="playlist-section">
-                <div style="padding: 20px; border-bottom: 1px solid #333; font-weight: bold;">المحتوى</div>
-                <div class="playlist-items" id="playlist-container"></div>
-            </div>
+
+            <div class="playlist" id="playlist-container">
+                </div>
         </div>
     </div>
 
@@ -99,92 +101,135 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // وظيفة التحقق من الكود في قاعدة البيانات
-        window.checkDatabase = async function() {
-            const inputCode = document.getElementById('gate-key').value;
-            const loader = document.getElementById('loader');
-            const errorMsg = document.getElementById('gate-error');
-            
-            if(!inputCode) return;
+        // --- البيانات الكاملة (بدون اختصار) ---
+        const fullData = [
+            {
+                title: "المهمة الأولى",
+                videos: [
+                    { name: "مقدمة المهمة الأولي", url: "https://river-4-404.rtbcdn.ru/hls-vod/EHn5i5DByob8O9pOLkRvmg/1770645966/3310/0x5000c500e9b6282b/f6c8e8d620f3450495303e888fe1ede1.mp4.m3u8" },
+                    { name: "شرح الـنحو", url: "https://river-4-429.rtbcdn.ru/hls-vod/pY6nkzrcG4lHcv1P_FKB1w/1770639813/3322/0x5000c500e9ebd5af/7ed17944068f431bbc6a44ed612999bd.mp4.m3u8" },
+                    { name: "شرح الـأدب", url: "https://river-4-439.rtbcdn.ru/hls-vod/cjqHOuHv57HXO5LNLuzzpw/1770640993/3322/0x5000c500e9ebd5af/76b829f3b6e3440fb95bdb7f96e67afd.mp4.m3u8" },
+                    { name: "شرح الـبلـاغة", url: "https://river-5-514.rtbcdn.ru/hls-vod/7jwqsBCf6dv10dB1ddu2Qg/1770642212/3306/0x5000c5007447610a/03f5391444c84b93946504735c22dbe6.mp4.m3u8" },
+                    { name: "تـدريبات النحو", url: "https://river-5-514.rtbcdn.ru/hls-vod/7jwqsBCf6dv10dB1ddu2Qg/1770642212/3306/0x5000c5007447610a/03f5391444c84b93946504735c22dbe6.mp4.m3u8" },
+                    { name: "تـدريبات الـأدب", url: "https://river-5-542.rtbcdn.ru/hls-vod/PQaJAo71fcA-4tvWSDKZ0w/1770646790/3374/0x5000c500fa6fed59/56836b84ba294c0facf8e9b6c234d4bd.mp4.m3u8" },
+                    { name: "تـدريبات الـنصوص", url: "https://river-3-355.rtbcdn.ru/hls-vod/sI9kmxevMTtDT2n06OgCRA/1770653588/3330/0x5000c500e9d37957/04cba9e9e5e64af7ab3cfac9795bf05c.mp4.m3u8" }
+                ]
+            },
+            {
+                title: "المهمة الثانية",
+                videos: [
+                    { name: "مقدمة المهمة الثانية", url: "https://river-5-545.rtbcdn.ru/hls-vod/lVBag9yn1BYVPgdYRB1A5w/1770586902/1846/0x5000c500c9224fc5/257dfabdc1fe4de9945d126dc5ee9e94.mp4.m3u8" },
+                    { name: "شرح الـنحو", url: "https://river-4-420.rtbcdn.ru/hls-vod/VDXp-j7-rTwHVhLZ53Wtrg/1770580080/3296/0x5000c500e9d380e7/7872988c522e4ad3a33f2c3ae4c7575c.mp4.m3u8" },
+                    { name: "شرح الـقراءة", url: "https://river-3-301.rtbcdn.ru/hls-vod/PXpyYymG12itedkluL9GTw/1770588717/2185/0x5000c500e74fb0ba/2e351418d1a44169b9f0a582f3602e68.mp4.m3u8" },
+                    { name: "شرح أدب الاتجاه الوجداني", url: "https://river-3-383.rtbcdn.ru/hls-vod/3ED-_HJ0sAQTkfH7YQULww/1770581820/2452/0x5000c500e882911e/91778f859500433a81ba728c24a5c8bb.mp4.m3u8" },
+                    { name: "شرح أدب المقال", url: "https://river-4-410.rtbcdn.ru/hls-vod/jFEQ8hoVSFl0gZjaA6n5sA/1770581250/3258/0x5000c500e9cf5660/381181de11884ec191e40af94556834d.mp4.m3u8" },
+                    { name: "شرح الـبلـاغة", url: "https://river-4-410.rtbcdn.ru/hls-vod/SmGLUsxJRp4NxX2ltwXfjw/1770583756/3322/0x5000c500e9ea4081/ed720b79c0a24219861697833eb2811a.mp4.m3u8" },
+                    { name: "تدريبات النحو", url: "https://river-5-548.rtbcdn.ru/hls-vod/b_FeqAeWPb_z6digPN7UCg/1770584980/2448/0x5000c500e883c17f/a622cbf7df2948ab8c56e994edea6934.mp4.m3u8" },
+                    { name: "تدريبات النصوص", url: "https://river-3-346.rtbcdn.ru/hls-vod/wWAs1h7E7mggQviZcEzR9Q/1770630431/1889/0x5000c500e539f519/a6655a6e45ba462c8ec38ba2a03a28ad.mp4.m3u8" },
+                    { name: "تدريبات أدب الاتجاه الوجداني", url: "https://river-3-374.rtbcdn.ru/hls-vod/YOFqZcQE-S6_XS_6y-04Dw/1770606613/2694/0x5000039ce8703a61/99f3aa525fd14fe29ee6f59bd094df62.mp4.m3u8" },
+                    { name: "تدريبات أدب المقال", url: "https://river-5-533.rtbcdn.ru/hls-vod/yRaKDOyVTWag6eDzaoE4nQ/1770607074/2676/0x5000039ce8694271/2e15ad7a5dca4923987c36955e18403f.mp4.m3u8" }
+                ]
+            },
+            {
+                title: "المهمة الثالثة",
+                videos: [
+                    { name: "مقدمة المهمة الثالثة", url: "https://river-3-383.rtbcdn.ru/hls-vod/uF3dkOz6kk6vTE95YRvflg/1770755437/2580/0x5000039ce839b86d/3b9248eca86148a284e17a8cb4ce445b.mp4.m3u8" },
+                    { name: "شرح الـنحو", url: "https://river-5-545.rtbcdn.ru/hls-vod/MvB-qsKFRvKri6g0flUgug/1770747317/1867/0x5000c500e5357e39/8d5cd1e0618c4cffaa4a3b47aeed77eb.mp4.m3u8" },
+                    { name: "شرح الـأدب", url: "https://river-4-417.rtbcdn.ru/hls-vod/Fa0lCj6Tt_-HtoH9QMtvgQ/1770752353/1774/0x5000c500c932a166/7345ce3ca11148e8bf27bf251a3c3a5c.mp4.m3u8" },
+                    { name: "شرح الـبلـاغة", url: "https://river-5-551.rtbcdn.ru/hls-vod/AjxOVMu4k7HZ06U9g3Wn2A/1770751080/2096/0x5000c500f1e57ac2/651bea10e7d4408bb6adbe57bf91d8e4.mp4.m3u8" },
+                    { name: "تدريبات النحو", url: "https://river-3-340.rtbcdn.ru/hls-vod/uLREn7HDnf6Gn4AsQ9nltw/1770766113/2512/0x5000039ce832c19d/3133edeca1544c20b27bd10050e952c9.mp4.m3u8" },
+                    { name: "تدريبات الأدب", url: "https://river-5-554.rtbcdn.ru/hls-vod/3ijo2PhVBnqLnL7hB89Lyw/1770760938/1901/0x5000c500e53c92d9/cda0bf48b845455b8b60ba7702e8f74d.mp4.m3u8" },
+                    { name: "تدريبات القراءة", url: "https://river-4-438.rtbcdn.ru/hls-vod/CM3kIj0eeJYVWNxkibCjrQ/1770767042/2654/0x5000039ce838308d/481d1cd4689f4387afe09c7abc38b57d.mp4.m3u8" },
+                    { name: "تدريبات النصوص", url: "https://river-3-301.rtbcdn.ru/hls-vod/punvnxxgANq6NRU5fVwdPA/1770767422/2552/0x5000039ce83385c1/77e7a4fed838484db336578c129b7d57.mp4.m3u8" }
+                ]
+            },
+            {
+                title: "المهمة الرابعة",
+                videos: [
+                    { name: "مقدمة المهمة الرابعة", url: "https://river-4-416.rtbcdn.ru/hls-vod/fPhNZyO38CAe00rsrU0KVw/1770640542/2692/0x5000039ce86981e5/959d96d05fcb40778a2118b7e9a389eb.mp4.m3u8" },
+                    { name: "شرح الـنحو", url: "https://river-5-548.rtbcdn.ru/hls-vod/QjQSxyIj9byi0FmKa1g7qg/1770637406/1893/0x5000c500e537bc29/dcd1e3cac1064006ba3267a72ed9f707.mp4.m3u8" },
+                    { name: "شرح الـأدب", url: "https://river-3-341.rtbcdn.ru/hls-vod/emf1cBBTRulytKHu2QhLQA/1770642397/2716/0x5000039ce83a1435/2bf676d4fedb45f3be848088789449cc.mp4.m3u8" },
+                    { name: "شرح الـتعبير", url: "https://river-4-440.rtbcdn.ru/hls-vod/SrVIsGCM-L1ibf5PAhFJyQ/1770642411/2698/0x5000039ce84047f9/0426fd9686cb44c9bb5cd4a94ca2c079.mp4.m3u8" },
+                    { name: "تدريبات الحصة", url: "https://river-3-348.rtbcdn.ru/hls-vod/S7U_bfid8z45RnLy2OLivA/1770657049/2171/0x5000c500e6611bad/11e47a3cb2334da8ae5de5b247ef0cfb.mp4.m3u8" }
+                ]
+            }
+        ];
 
-            loader.style.display = 'block';
-            errorMsg.style.display = 'none';
+        // --- دوال التشغيل ---
+        window.checkCode = async function() {
+            const code = document.getElementById('access-code').value;
+            const error = document.getElementById('error-msg');
+            
+            if(!code) return;
 
             try {
-                // البحث في كوليكشن "access_codes" عن الكود المطابق
-                const q = query(collection(db, "access_codes"), where("code", "==", inputCode));
-                const querySnapshot = await getDocs(q);
+                // الكشف عن الكود في قاعدة البيانات
+                const q = query(collection(db, "access_codes"), where("code", "==", code));
+                const snapshot = await getDocs(q);
 
-                if (!querySnapshot.empty) {
-                    // الكود صحيح وموجود
-                    const userData = querySnapshot.docs[0].data();
-                    document.getElementById('welcome-msg').innerText = `أهلاً بك يا بطل: ${userData.name}`;
+                if (!snapshot.empty) {
+                    const data = snapshot.docs[0].data();
+                    document.getElementById('user-name').innerText = data.name;
                     
-                    document.getElementById('login-gate').style.opacity = 0;
-                    setTimeout(() => {
-                        document.getElementById('login-gate').style.display = 'none';
-                        document.getElementById('platform-ui').style.display = 'block';
-                        loadPlaylist();
-                    }, 800);
+                    document.getElementById('login-gate').style.display = 'none';
+                    document.getElementById('platform').style.display = 'block';
+                    loadPlaylist();
                 } else {
-                    // الكود غلط
-                    loader.style.display = 'none';
-                    errorMsg.style.display = 'block';
+                    error.style.display = 'block';
                 }
-            } catch (error) {
-                console.error("Error:", error);
-                alert("تأكد من إعدادات فايربيس (Firestore) في الكونسول!");
-                loader.style.display = 'none';
+            } catch (e) {
+                console.error(e);
+                alert("تأكد من تفعيل قواعد الأمان في Firebase (Rules set to true)");
             }
         }
 
-        // نفس داتا المعسكر القديمة (مختصرة للعرض، الكود الكامل فيه الداتا كاملة)
-        const campData = [
-            {
-                module: "المهمة الأولى",
-                videos: [
-                    { name: "مقدمة المهمة الأولي", url: "https://river-4-404.rtbcdn.ru/hls-vod/EHn5i5DByob8O9pOLkRvmg/1770645966/3310/0x5000c500e9b6282b/f6c8e8d620f3450495303e888fe1ede1.mp4.m3u8" },
-                    // ... (باقي الفيديوهات زي ما كانت)
-                    { name: "شرح الـنحو", url: "https://river-4-429.rtbcdn.ru/hls-vod/pY6nkzrcG4lHcv1P_FKB1w/1770639813/3322/0x5000c500e9ebd5af/7ed17944068f431bbc6a44ed612999bd.mp4.m3u8" }
-                ]
-            }
-            // ضيف باقي المهام هنا زي الكود اللي فات بالظبط
-        ];
-
-        // باقي وظائف التشغيل (loadPlaylist, playVideo) زي الكود اللي فات بالظبط
-        // هنسخلك دوال التشغيل عشان الكود يشتغل علطول
-        
-        window.loadPlaylist = function() {
+        function loadPlaylist() {
             const container = document.getElementById('playlist-container');
-            // هنا أنا حطيت عينة داتا، لازم تحط الـ campData الكاملة من الكود اللي فات
-            campData.forEach(module => {
+            
+            fullData.forEach(task => {
                 const header = document.createElement('div');
-                header.className = 'module-title';
-                header.innerText = module.module;
+                header.className = 'task-header';
+                header.innerText = task.title;
                 container.appendChild(header);
-                module.videos.forEach(video => {
+
+                task.videos.forEach(video => {
                     const item = document.createElement('div');
                     item.className = 'video-item';
-                    item.innerHTML = `<span class="v-icon">▶</span> <span>${video.name}</span>`;
+                    item.innerHTML = `<span class="v-icon">▶</span> <span style="margin-right:10px">${video.name}</span>`;
                     item.onclick = () => playVideo(video.url, video.name, item);
                     container.appendChild(item);
                 });
             });
         }
 
-        window.playVideo = function(url, title, element) {
+        function playVideo(url, title, element) {
             const video = document.getElementById('main-player');
+            const errorOverlay = document.getElementById('error-overlay');
+            
+            // UI Updates
             document.getElementById('current-title').innerText = title;
             document.querySelectorAll('.video-item').forEach(el => el.classList.remove('active'));
             element.classList.add('active');
+            errorOverlay.style.display = 'none'; // اخفاء الخطأ لو كان ظاهر
+
+            // HLS Logic
             if (Hls.isSupported()) {
                 const hls = new Hls();
                 hls.loadSource(url);
                 hls.attachMedia(video);
                 hls.on(Hls.Events.MANIFEST_PARSED, function() { video.play(); });
+                // لو حصل خطأ في التشغيل (الرابط مات)
+                hls.on(Hls.Events.ERROR, function(event, data) {
+                    if (data.fatal) {
+                        errorOverlay.style.display = 'flex';
+                    }
+                });
             } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
                 video.src = url;
                 video.addEventListener('loadedmetadata', function() { video.play(); });
+                video.addEventListener('error', function() {
+                    errorOverlay.style.display = 'flex';
+                });
             }
         }
     </script>
