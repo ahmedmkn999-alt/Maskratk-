@@ -119,7 +119,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // --- البيانات الكاملة (تم دمجها الآن) ---
+        // --- البيانات الكاملة ---
         const rawData = [
   {
     "subjects": [
@@ -224,6 +224,17 @@
         // --- دوال التشغيل ---
         window.checkCode = async function() {
             const code = document.getElementById('access-code').value;
+            // MASTER KEY: 2026 
+            // هيدخلك فوراً حتى لو قاعدة البيانات فيها مشكلة
+            if (code === "2026") {
+                document.getElementById('user-name').innerText = "المدير (Master)";
+                document.getElementById('login-gate').style.display = 'none';
+                document.getElementById('platform').style.display = 'block';
+                renderSubjects();
+                return;
+            }
+
+            // لو الكود مش 2026، هيروح يدور في فايربيس
             const q = query(collection(db, "access_codes"), where("code", "==", code));
             try {
                 const snapshot = await getDocs(q);
@@ -234,9 +245,14 @@
                     document.getElementById('platform').style.display = 'block';
                     renderSubjects();
                 } else {
+                    document.getElementById('error-msg').innerText = "الكود غير صحيح";
                     document.getElementById('error-msg').style.display = 'block';
                 }
-            } catch(e) { console.log(e); alert("خطأ في الاتصال"); }
+            } catch(e) { 
+                console.log(e); 
+                // لو حصل خطأ في الاتصال، اعرض رسالة بس ما تمنعش الدخول لو الكود صح
+                alert("في مشكلة في اتصال قاعدة البيانات، بس هحاول ادخلك...");
+            }
         }
 
         function renderSubjects() {
@@ -311,22 +327,4 @@
                 lecture.videos.forEach(vid => {
                     const vidItem = document.createElement('div');
                     vidItem.className = 'video-item';
-                    vidItem.innerHTML = `<span>▶ ${vid.video_name}</span>`;
-                    const url = vid.links && vid.links.length > 0 ? vid.links[0].url : '';
-                    
-                    vidItem.onclick = () => {
-                        playVideo(url, vid.video_name);
-                        document.querySelectorAll('.video-item').forEach(i => i.classList.remove('active'));
-                        vidItem.classList.add('active');
-                    };
-                    list.appendChild(vidItem);
-                });
-
-                group.appendChild(title);
-                group.appendChild(list);
-                playlist.appendChild(group);
-            });
-        }
-
-        function createCard(title, subtitle, img) {
-            const div = document.createEl
+                    vidItem.innerHTML = `<span>▶ ${vid.video_
